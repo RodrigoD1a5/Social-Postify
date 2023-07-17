@@ -23,4 +23,8 @@ export class PrismaPublicationRepository implements PublicationRepository {
     async findPublicationByTitle(title: string) {
         return await this.prisma.publications.findUnique({ where: { title } });
     }
+
+    async getPublications(id: number) {
+        return await this.prisma.publications.findMany({ where: { userId: id } })
+    }
 }
