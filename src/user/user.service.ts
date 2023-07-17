@@ -1,6 +1,6 @@
 import { ConflictException, HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { CreateUserDTO } from './dto/create-user.dto';
-import { UsersRepository } from './user.repository';
+import { UsersRepository } from './repository/user.repository';
 import * as bcrypt from "bcrypt"
 import { SigninUserDTO } from './dto/signin-user.dto';
 
@@ -8,23 +8,23 @@ import { SigninUserDTO } from './dto/signin-user.dto';
 export class UserService {
     constructor(private readonly usersRepository: UsersRepository) { }
 
-    async addUser(body: CreateUserDTO) {
-        const user = await this.usersRepository.findUserByEmail(body.email);
-        if (user) throw new ConflictException('User already exists');
-
-        const hashedPassword = bcrypt.hashSync(body.password, 10);
-
-        const userCreated = await this.usersRepository.createUser({
-            ...body,
-            password: hashedPassword,
-        })
-
+    async addUser(data: CreateUserDTO) {
+        const hashPassword = bcrypt.hashSync(data.password, 10);
+        const user = await this.usersRepository.findUserByEmail(data.email);
+        if (user)
+            throw new HttpException('User already exists', HttpStatus.CONFLICT);
+        return await this.usersRepository.addUser({
+            ...data,
+            password: hashPassword,
+        });
     }
-    async signin(body: SigninUserDTO) {
-        const user = await this.usersRepository.findUserByEmail(body.email);
-        if (!user) throw new HttpException('Email or password is incorrect', HttpStatus.UNAUTHORIZED)
+    async findAllUsers() {
+        return await this.usersRepository.findAllUsers();
+    }
 
-        const validPassword = bcrypt.compareSync(body.password, user.password);
-        if (!validPassword) throw new HttpException('Email or password is incorrect', HttpStatus.UNAUTHORIZED)
+    async findUserById(id: number) {
+        const user = await this.usersRepository.findUserById(id);
+        if (!user) throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+        return user;
     }
 }
